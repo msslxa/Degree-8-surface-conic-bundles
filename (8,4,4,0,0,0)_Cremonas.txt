@@ -1,0 +1,92 @@
+FF<a4,a5,a6,b2,b3,c0,c1,c2,c3,c4,d0,g0,h0> := FunctionField(Rationals(),13);
+
+a1 := -(- a5 - 1/2*b2 - 1/2*c2 - 1/2*d0 - 1/2*g0 - 1/2*h0);
+a2 := -(+ 2*a4 + 3*a6 + 1/2*b2 + 1/2*c2 - 1/4*d0 - 1/4*g0 - 1/4*h0);
+a3 := -(+ 2*a5 + 1/2*b2 + 1/2*c2);
+a7 := 0;
+b1 := -(+ b3 + c1 + c3 + d0 + g0 + h0);
+b4 := - c4;
+
+a0 := a1 - a2 + a3 - a4 + a5 - a6 + a7;
+b0 := -g0 - 2*a1 - b1 - b2 - c1 - c0 - c4 - b4 - 2*a7 - h0 - d0 - 2*a5 - c3 - b3 - 2*a3 - c2;
+a8 := 0;
+
+A<x0,y1,y2> := AffineSpace(FF,3);
+
+y0 := 1;
+
+x1 := 1;
+
+s00 := a0*x0^8+a1*x0^7*x1+a2*x0^6*x1^2+a3*x0^5*x1^3+a4*x0^4*x1^4+a5*x0^3*x1^5+a6*x0^2*x1^6+a7*x0*x1^7+a8*x1^8;
+s01 := b0*x0^4+b1*x0^3*x1+b2*x0^2*x1^2+b3*x0^3*x1+b4*x1^4;
+s02 := c0*x0^4+c1*x0^3*x1+c2*x0^2*x1^2+c3*x0^3*x1+c4*x1^4;
+s11 := d0;
+s12 := g0;
+s22 := h0;
+
+F := s00*y0^2+s01*y0*y1+s02*y0*y2+s11*y1^2+s12*y1*y2+s22*y2^2;
+
+X := Scheme(A,F);
+
+P<z0,z1,z2,w> := ProjectiveSpace(FF,3);
+
+i := map<A->P | [x0,y1,y2,1]>;
+
+X := i(X);
+
+x := P![1,0,0,-1];
+y := P![0,0,0,1];
+z := P![1,1,1,1];
+
+Tx := TangentSpace(X,x);
+Ty := TangentSpace(X,y);
+Tz := TangentSpace(X,z);
+
+C := Curve(X meet Tx);
+
+IsIrreducible(C);
+
+proj := map<X->ProjectiveSpace(FF,1) | [z0,w]>;
+
+Dimension(proj(C));
+
+P2<w0,w1,w2> := ProjectiveSpace(FF,2);
+
+j := map<P2->P | [w0,w1,w1,w2]>;
+
+Fiber := function(f,Z)
+    equ := DefiningEquations(f);
+    bas := MinimalBasis(Z);
+    P := Domain(f);
+    X := Scheme(P,[Evaluate(g,equ) : g in bas]);
+    return Complement(X,Scheme(P,equ));
+end function;
+
+C := Fiber(j,C);
+
+c := P2![0,1,0];
+n1 := P2![0,0,1];
+n2 := P2![1,1,1];
+n3 := P2![1,0,-1];
+
+J := IrrelevantIdeal(P2);
+
+B := [f : f in Basis(Ideal(Cluster(c)) meet Ideal(Cluster(n1)) meet Ideal(Cluster(n3)) meet J^2) | Degree(f) eq 2];
+
+cr1 := map<P2->P2 | B>;
+
+C1 := cr1(C);
+
+q1 := P2![2,1,1];
+q2 := P2![0,1,0];
+q3 := P2![1,0,0];
+
+B := [f : f in Basis(Ideal(Cluster(q1)) meet Ideal(Cluster(q2)) meet Ideal(Cluster(q3)) meet J^2) | Degree(f) eq 2];
+
+cr2 := map<P2->P2 | B>;
+
+C2 := cr2(C1);
+
+cr3 := map<P2->P2 | [-2*(w0-w1)*w2+w0^2,w1^2,w0*w1]>;
+
+C3 := cr3(C2);
