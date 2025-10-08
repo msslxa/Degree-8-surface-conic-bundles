@@ -1,4 +1,4 @@
-Conic Bundles Maple Worksheets
+**Conic Bundles Maple Worksheets**
 
 Overview
 
@@ -119,3 +119,9 @@ The routine expects Delta12 = 4alpha0alpha3 - alpha1^2 to be nonzero on the regi
 Notes on constraints with divisions
 
 Whenever a constraint like b0c3 - c0b3 = 0 is enforced as c3 = (c0*b3)/b0, the worksheet assumes b0 != 0 for that branch. If you need the b0 = 0 branch, edit the constraint block (for example, enforce c0 = 0 when b3 != 0, or drop the constraint if both b0 and b3 are zero so the identity holds automatically).
+
+
+**Verification script (Magma):** the file `(8,4,4,0,0,0)_Cremonas.txt` symbolically reproduces the Cremona sequence:
+1) builds X₈ ⊂ ℙ³ with a 6-fold line and forms the plane octic C = X₈ ∩ (z₁−z₂=0),
+2) applies two standard quadratic Cremonas and a final explicit quadratic map,
+3) confirms that the image is a smooth conic, hence that C is rational.
