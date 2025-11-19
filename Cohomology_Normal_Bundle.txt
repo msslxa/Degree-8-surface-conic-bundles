@@ -1,0 +1,228 @@
+////////////////////////////////////////////////////////////////////////
+// Splitting conic bundles as hypersurfaces in a toric variety
+// and cohomology of the normal bundle N_{S/X}.
+//
+// SETUP.
+//   Base: P^1 over Q.
+//   Vector bundle:
+//      E = O_{P^1}(a0) ⊕ O_{P^1}(a1) ⊕ O_{P^1}(a2).
+//   Toric variety:
+//      X = T_{a0,a1,a2} ≅ P(E),
+//      realised as a 3–dimensional simplicial toric variety with Cox ring
+//      Q[x0,x1,y0,y1,y2], Z^2–graded by
+//          deg(x0) = deg(x1) = (1,0),
+//          deg(y_i) = (-a_i,1).
+//
+//   A splitting conic bundle surface S ⊂ X is cut out by one quadratic equation
+//      F = Σ_{0≤i≤j≤2} σ_{ij}(x0,x1) y_i y_j,
+//   where each σ_{ij} is homogeneous of degree
+//      d_{ij} = a_i + a_j + m
+//   in x0,x1. Thus the multidegree of S in Cl(X) ≅ Z^2 is (m,2).
+//
+// NORMAL BUNDLE COHOMOLOGY.
+//   Let π : X → P^1 be the projection, H the relative hyperplane class,
+//   and L := O_X(2H) ⊗ π^*O(m). Then S is the zero locus of a section of L,
+//   and the normal bundle is
+//      N_{S/X} ≅ L|_S.
+//   From
+//      0 → O_X → L → N_{S/X} → 0
+//   and H^1(X,O_X)=H^2(X,O_X)=0 one gets
+//      h^0(N_{S/X}) = h^0(L) - 1,
+//      h^1(N_{S/X}) = h^1(L),
+//      h^i(N_{S/X}) = 0 for i ≥ 2.
+//
+//   Using π_*O_X(2H) ≅ Sym^2(E) and higher direct images zero, we obtain
+//      π_*L ≅ Sym^2(E) ⊗ O(m)
+//            ≅ ⊕_{0≤i≤j≤2} O_{P^1}(m + a_i + a_j),
+//   hence
+//      h^q(L) = Σ_{i≤j} h^q(P^1, O(m + a_i + a_j)).
+//
+//   The function SplittingConicBundleToric(a0,a1,a2,m) below:
+//      * builds X = T_{a0,a1,a2},
+//      * chooses a random splitting conic bundle S ⊂ X of multidegree (m,2),
+//      * prints geometric and cohomological data,
+//      * returns X, S, F, h^0(N_{S/X}), h^1(N_{S/X}).
+//
+//   At the end, we loop over the four splitting types with discriminant
+//   degree d_S = 8, namely
+//      (a0,a1,a2) in {(2,1,1), (2,2,0), (3,1,0), (4,0,0)},
+//   and m = 0, and display the cohomology of N_{S/X} for each type.
+////////////////////////////////////////////////////////////////////////
+
+// ====== basic P^1 cohomology helpers ======
+
+H0P1 := function(d)
+    // dim H^0(P^1,O(d))
+    if d ge 0 then
+        return d + 1;
+    else
+        return 0;
+    end if;
+end function;
+
+H1P1 := function(d)
+    // dim H^1(P^1,O(d))
+    if d le -2 then
+        return -d - 1;
+    else
+        return 0;
+    end if;
+end function;
+
+// ====== degrees d_ij from a_i and m ======
+//
+// Compatibility: d_{ij} = a_i + a_j + m,
+// multidegree (in Cl(X) ≅ Z^2) is (m,2).
+
+DijDegrees := function(a0,a1,a2,m)
+    return [
+        2*a0 + m,          // d00
+        a0 + a1 + m,       // d01
+        a0 + a2 + m,       // d02
+        2*a1 + m,          // d11
+        a1 + a2 + m,       // d12
+        2*a2 + m           // d22
+    ];
+end function;
+
+// ====== random homogeneous in x0,x1 of degree d ======
+
+RandomHomogeneousInX := function(R, x0, x1, d)
+    Q := Rationals();
+    poly := R!0;
+    for k in [0..d] do
+        c := Random([-3..3]);
+        if c ne 0 then
+            poly +:= Q!c * x0^k * x1^(d-k);
+        end if;
+    end for;
+    if poly eq 0 then
+        poly +:= x0^d;
+    end if;
+    return poly;
+end function;
+
+// ====== main constructor ======
+//
+// Input:  a0,a1,a2 ≥ 0  (splitting type of E = O(a0)⊕O(a1)⊕O(a2))
+//         m ∈ Z         (common offset, so d_ij = a_i + a_j + m)
+//
+// Output: X   : toric 3-fold T_{a0,a1,a2}
+//         S   : splitting conic bundle surface S ⊂ X
+//         F   : defining Cox polynomial
+//         h0N : dim H^0(S,N_{S/X})
+//         h1N : dim H^1(S,N_{S/X})
+
+SplittingConicBundleToric := function(a0,a1,a2,m)
+    Q := Rationals();
+
+    // Cox ring variables: x0,x1 for base; y0,y1,y2 for fiber
+    R<x0,x1,y0,y1,y2> := PolynomialRing(Q,5);
+
+    // Irrelevant components: (x0,x1) and (y0,y1,y2)
+    I := [
+        ideal<R | x0, x1>,
+        ideal<R | y0, y1, y2>
+    ];
+
+    // Z^2-gradings:
+    //   deg(x0) = deg(x1) = (1,0)
+    //   deg(y_i) = (-a_i, 1)
+    Z := [
+        [ 1, 1, -a0, -a1, -a2 ],
+        [ 0, 0,  1,   1,   1  ]
+    ];
+
+    // No quotient gradings
+    Qw := [];
+
+    // Cox ring and toric variety X
+    C := CoxRing(R, I, Z, Qw);
+    X := ToricVariety(C);
+
+    print "============================================================";
+    print "Toric variety X = T_{a0,a1,a2} with";
+    print "  a0 =", a0, "a1 =", a1, "a2 =", a2;
+    print X;
+
+    // Degrees d_{ij} = a_i + a_j + m
+    degs := DijDegrees(a0,a1,a2,m);
+    d00 := degs[1]; d01 := degs[2]; d02 := degs[3];
+    d11 := degs[4]; d12 := degs[5]; d22 := degs[6];
+
+    print "Multidegree parameter m =", m;
+    print "Degrees d_ij = [d00,d01,d02,d11,d12,d22] =", degs;
+
+    // Random σ_{ij}(x0,x1)
+    sigma00 := RandomHomogeneousInX(R, x0, x1, d00);
+    sigma01 := RandomHomogeneousInX(R, x0, x1, d01);
+    sigma02 := RandomHomogeneousInX(R, x0, x1, d02);
+    sigma11 := RandomHomogeneousInX(R, x0, x1, d11);
+    sigma12 := RandomHomogeneousInX(R, x0, x1, d12);
+    sigma22 := RandomHomogeneousInX(R, x0, x1, d22);
+
+    // Splitting conic bundle equation F = Σ σ_ij y_i y_j
+    F := sigma00*y0^2
+         + sigma01*y0*y1
+         + sigma02*y0*y2
+         + sigma11*y1^2
+         + sigma12*y1*y2
+         + sigma22*y2^2;
+
+    // Hypersurface S ⊂ X
+    S := Scheme(X, F);
+
+    print "Splitting conic bundle S defined by F=0.";
+    print "Dimension(S) =", Dimension(S);
+
+    ////////////////////////////////////////////////////////////////////
+    // Cohomology of the normal bundle N_{S/X}.
+    //
+    // L := O_X(2H) ⊗ π^*O(m),
+    // h^q(L) = Σ_{0≤i≤j≤2} h^q(P^1,O(m + a_i + a_j)),
+    // N_{S/X} ≅ L|_S,
+    // h^0(N) = h^0(L) − 1,  h^1(N) = h^1(L),  h^i(N) = 0 for i ≥ 2.
+    ////////////////////////////////////////////////////////////////////
+
+    degP1 := [
+        m + (a0 + a0),    // (0,0)
+        m + (a0 + a1),    // (0,1)
+        m + (a0 + a2),    // (0,2)
+        m + (a1 + a1),    // (1,1)
+        m + (a1 + a2),    // (1,2)
+        m + (a2 + a2)     // (2,2)
+    ];
+
+    h0L := &+[ H0P1(d) : d in degP1 ];
+    h1L := &+[ H1P1(d) : d in degP1 ];
+
+    h0N := (h0L eq 0) select 0 else h0L - 1;
+    h1N := h1L;
+
+    print "Degrees on P^1 in Sym^2(E) ⊗ O(m):", degP1;
+    print "h^0(L) =", h0L, "  h^1(L) =", h1L;
+    print "Cohomology of the normal bundle N_{S/X}:";
+    print "  h^0(N) =", h0N;
+    print "  h^1(N) =", h1N;
+    print "  h^i(N) = 0 for i >= 2.";
+    print "============================================================";
+
+    return X, S, F, h0N, h1N;
+end function;
+
+// ====== run over the four d_S = 8 splitting types ======
+//
+// For discriminant degree d_S = 8 we have m = 0 and
+//   (a0,a1,a2) in {(2,1,1), (2,2,0), (3,1,0), (4,0,0)}.
+// The loop below constructs a random splitting conic bundle of each type
+// and prints the cohomology of the normal bundle.
+
+Types := [ <2,1,1>, <2,2,0>, <3,1,0>, <4,0,0> ];
+m := 0;
+
+for T in Types do
+    a0 := T[1]; a1 := T[2]; a2 := T[3];
+    print "********** Splitting type (a0,a1,a2) = (", a0, ",", a1, ",", a2, "),  m =", m, " **********";
+    X, S, F, h0N, h1N := SplittingConicBundleToric(a0,a1,a2,m);
+    print "Type (", a0, ",", a1, ",", a2, "):  h^0(N_{S/X}) =", h0N, ",  h^1(N_{S/X}) =", h1N;
+end for;
