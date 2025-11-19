@@ -126,4 +126,4 @@ Whenever a constraint like b0c3 - c0b3 = 0 is enforced as c3 = (c0*b3)/b0, the w
 2) applies two standard quadratic Cremonas and a final explicit quadratic map,
 3) confirms that the image is a smooth conic, hence that C is rational.
 
-**Verification script (Magma):** the file `Cohomology_Normal_Bundle.txt`: computes the cohomology groups of the normal bundle of the a smooth conic bundle with degree 8 discriminant for each one of the four types.
+**Verification script (Magma):** the file `Cohomology_Normal_Bundle.txt`: computes the cohomology groups of the normal bundle of a smooth conic bundle with degree 8 discriminant for each one of the four types.
